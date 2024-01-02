@@ -6,6 +6,8 @@ const GPT = () => {};
 
 GPT.createQuestionsBatch = async () => {
   try {
+    await callUpdateGptTables();
+
     const fetchQuery = `SELECT id, text FROM gpt_text limit ${process.env.LIMIT}`;
     const [answersData] = await sql.query(fetchQuery);
 
@@ -52,6 +54,22 @@ GPT.createQuestionsBatch = async () => {
     console.error("Error in createQuestionsBatch:", error.message);
     throw error;
   }
+};
+
+// Define the stored procedure function
+const callUpdateGptTables = () => {
+  return new Promise((resolve, reject) => {
+    const storedProcedureQuery = "CALL gpt_update_tables()";
+    sql.query(storedProcedureQuery)
+      .then(result => {
+        // console.log("Stored procedure called successfully");
+        resolve(result);
+      })
+      .catch(err => {
+        console.error("Error calling stored procedure:", err);
+        reject(err);
+      });
+  });
 };
 
 export default GPT;

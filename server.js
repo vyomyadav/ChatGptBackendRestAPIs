@@ -7,7 +7,7 @@ import gptRoutes from "./app/routes/gpt.routes.js";
 const app = express();
 
 var corsOptions = {
-  origin: "http://localhost:3000"
+  origin: process.env.FRONTEND_PORT
 };
 
 app.use(cors(corsOptions));
