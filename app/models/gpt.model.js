@@ -6,7 +6,7 @@ const GPT = () => {};
 
 GPT.createQuestionsBatch = async () => {
   try {
-    const fetchQuery = "SELECT id, text FROM gpt_text limit 2";
+    const fetchQuery = `SELECT id, text FROM gpt_text limit ${process.env.LIMIT}`;
     const [answersData] = await sql.query(fetchQuery);
 
     if (!answersData || answersData.length === 0) {
@@ -15,7 +15,7 @@ GPT.createQuestionsBatch = async () => {
 
     const responsesPromises = answersData.map(async ({ id, text }) => {
       const id_text = id;
-      const modifiedText = `What questions can be generated from the following text:\n ${text} `;
+      const modifiedText = `quelles questions peuvent être générées à partir du texte suivant :\n ${text} `;
       const gptResponse = await chatGPTRequest(modifiedText);
 
       const questions = gptResponse
@@ -26,7 +26,7 @@ GPT.createQuestionsBatch = async () => {
           return match ? { id_text, question: match[1].trim() } : null;
         })
         .filter(question => question !== null)
-        .slice(0, 10);
+        .slice(0, process.env.NUMBER_QUESTIONS);
 
       const insertPromises = questions.map(({ id_text, question }) => {
         const insertQuery = "INSERT INTO gpt_invite (id_text, invite) VALUES (?, ?)";
