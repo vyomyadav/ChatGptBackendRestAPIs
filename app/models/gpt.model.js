@@ -2,7 +2,7 @@
 import sql from "./db.js";
 import chatGPTRequest from "../chatGptIntegration.js";
 
-const GPT = () => {};
+const GPT = () => { };
 
 GPT.createQuestionsBatch = async () => {
   try {
@@ -55,6 +55,34 @@ GPT.createQuestionsBatch = async () => {
     throw error;
   }
 };
+
+GPT.getUniqueGPTIndex = async () => {
+  try {
+    const fetchQuery = `SELECT id, key_metadata FROM gpt_index WHERE id IN (SELECT MIN(id) AS id FROM chatgpt.gpt_index GROUP BY key_metadata);`;
+    const [answersData] = await sql.query(fetchQuery);
+    return answersData;
+  } catch (error) {
+    console.error("Error in getUniqueGPTIndex: ", error.message)
+    throw error
+  }
+}
+
+GPT.getSummaryInvite = async (data) => {
+  try {
+    const fetchQuery = `Select distinct id_text from chatgpt.gpt_index where key_metadata = "${data}";`
+    const [answersData] = await sql.query(fetchQuery);
+    const idTextValues = answersData.map(item => item.id_text).join(',');
+    const fetchSecondQuery = `Select text from chatgpt.gpt_text where id IN (${idTextValues});`
+    const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
+    const invitesSummary = secondQueryAnswerData.map(item => item.invite).join("\n");
+    const modifiedText = `Résumez les textes ci-dessous:\n ${invitesSummary} `;
+    const gptResponse = await chatGPTRequest(modifiedText);
+    return gptResponse
+  } catch (error) {
+    console.error("Error in getSummaryInvite: ", error.message)
+    throw error
+  }
+}
 
 // Define the stored procedure function
 const callUpdateGptTables = () => {
