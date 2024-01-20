@@ -75,7 +75,7 @@ GPT.getSummaryInvite = async (data) => {
     const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
     const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
     const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
-    const modifiedText = `Résumez les textes ci-dessous:\n ${invitesSummary} `;
+    const modifiedText = `Résumer les textes:\n ${invitesSummary} `;
     const gptResponse = await chatGPTRequest(modifiedText);
     return gptResponse
   } catch (error) {
