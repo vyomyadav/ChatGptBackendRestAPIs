@@ -37,12 +37,12 @@ const getUniqueGPTIndex = async (req, res) => {
 
 const getSummaryInvite = async (req, res) => {
   try {
-    if (!req.query.data) {
+    if (!req.body.key || !req.body.question) {
       res.status(400).send({
-        message: "Content can not be empty!"
+        message: "Attribute in body missing"
       });
     }
-    const data = await GPT.getSummaryInvite(req.query.data);
+    const data = await GPT.getSummaryInvite(req.body);
     if (!data || data.length == 0) {
       res.status(400).send({
         error: "Data not found"

@@ -6,6 +6,6 @@ const router = express.Router();
 // Create Chat Gpt Questions
 router.post("/createQuestionsBatch", createQuestionsBatch);
 router.get("/getUniqueGPTIndex", getUniqueGPTIndex);
-router.get("/getSummaryInvite", getSummaryInvite );
+router.post("/getSummaryInvite", getSummaryInvite );
 
 export default router;

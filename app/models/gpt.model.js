@@ -69,13 +69,13 @@ GPT.getUniqueGPTIndex = async () => {
 
 GPT.getSummaryInvite = async (data) => {
   try {
-    const fetchQuery = `Select distinct id_text from gpt_index where key_metadata = "${data}";`
+    const fetchQuery = `Select distinct id_text from gpt_index where key_metadata = "${data.key}";`
     const [answersData] = await sql.query(fetchQuery);
     const idTextValues = answersData.map(item => item.id_text).join(',');
     const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
     const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
     const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
-    const modifiedText = `Résumer les textes:\n ${invitesSummary} `;
+    const modifiedText = `${data.question} :\n ${invitesSummary} `;
     const gptResponse = await chatGPTRequest(modifiedText);
     return gptResponse
   } catch (error) {
