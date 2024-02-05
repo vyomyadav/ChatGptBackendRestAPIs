@@ -35,6 +35,25 @@ const getUniqueGPTIndex = async (req, res) => {
   }
 };
 
+const getDistinctDoc = async (req, res) => {
+  try {
+    const data = await GPT.getDistinctDoc();
+    if (!data || data.length == 0) {
+      res.status(400).send({
+        error: "Data not found"
+      });
+    } else {
+      res.status(200).send(data);
+    }
+  } catch (error) {
+    console.error("Error in getUniqueGPTIndex controller:", error.message);
+    res.status(500).send({
+      message: "Something went wrong.",
+      error: error.message,
+    });
+  }
+};
+
 const getSummaryInvite = async (req, res) => {
   try {
     if (!req.body.key || !req.body.question) {
@@ -59,4 +78,28 @@ const getSummaryInvite = async (req, res) => {
   }
 };
 
-export { createQuestionsBatch, getUniqueGPTIndex, getSummaryInvite };
+const getSummaryDoc = async (req, res) => {
+  try {
+    if (!req.body.key || !req.body.question) {
+      res.status(400).send({
+        message: "Attribute in body missing"
+      });
+    }
+    const data = await GPT.getSummaryDoc(req.body);
+    if (!data || data.length == 0) {
+      res.status(400).send({
+        error: "Data not found"
+      });
+    } else {
+      res.status(200).send(data);
+    }
+  } catch (error) {
+    console.error("Error in getSummaryDoc controller:", error.message);
+    res.status(500).send({
+      message: "Something went wrong.",
+      error: error.message,
+    });
+  }
+};
+
+export { createQuestionsBatch, getUniqueGPTIndex, getSummaryInvite, getDistinctDoc, getSummaryDoc };

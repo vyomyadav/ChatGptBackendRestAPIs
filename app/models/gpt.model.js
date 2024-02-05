@@ -67,6 +67,17 @@ GPT.getUniqueGPTIndex = async () => {
   }
 }
 
+GPT.getDistinctDoc = async () => {
+  try {
+    const fetchQuery = `Select distinct typ_de_doc from gpt_index;`;
+    const [answersData] = await sql.query(fetchQuery);
+    return answersData;
+  } catch (error) {
+    console.error("Error in getUniqueGPTIndex: ", error.message)
+    throw error
+  }
+}
+
 GPT.getSummaryInvite = async (data) => {
   try {
     const fetchQuery = `Select distinct id_text from gpt_index where key_metadata = "${data.key}";`
@@ -80,6 +91,23 @@ GPT.getSummaryInvite = async (data) => {
     return gptResponse
   } catch (error) {
     console.error("Error in getSummaryInvite: ", error.message)
+    throw error
+  }
+}
+
+GPT.getSummaryDoc = async (data) => {
+  try {
+    const fetchQuery = `Select distinct id_text from gpt_index where typ_de_doc = "${data.key}";`
+    const [answersData] = await sql.query(fetchQuery);
+    const idTextValues = answersData.map(item => item.id_text).join(',');
+    const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
+    const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
+    const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
+    const modifiedText = `${invitesSummary} \n \n Question: \n ${data.question}  `;
+    const gptResponse = await chatGPTRequest(modifiedText);
+    return gptResponse
+  } catch (error) {
+    console.error("Error in getSummaryDoc: ", error.message)
     throw error
   }
 }
