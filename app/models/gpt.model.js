@@ -1,6 +1,7 @@
 // GPT.model.js
 import sql from "./db.js";
-import chatGPTRequest from "../chatGptIntegration.js";
+import {chatGPTRequest, chatGPTRequestWithParentId} from "../chatGptIntegration.js";
+import splitParagraph from "../utils/utils.js";
 
 const GPT = () => { };
 
@@ -103,9 +104,24 @@ GPT.getSummaryDoc = async (data) => {
     const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
     const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
     const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
-    const modifiedText = `${invitesSummary} \n \n Question: \n ${data.question}  `;
-    const gptResponse = await chatGPTRequest(modifiedText);
-    return gptResponse
+    const wordCount = process.env.DOC_WORD_COUNT;
+    let modifiedText = splitParagraph(invitesSummary, wordCount)
+    let parentId = null;
+    let gptResponse = [];
+    gptResponse[0] = await chatGPTRequestWithParentId(`Summarise the below conversation: \n ${modifiedText.firstPart}`, parentId);
+    parentId = gptResponse[0].id
+    modifiedText = splitParagraph(modifiedText.secondPart, wordCount)
+    let c = 1;
+    do {
+      gptResponse[c] = await chatGPTRequestWithParentId(`Summarise the below text and the previous summary: \n ${modifiedText.firstPart}`, parentId);
+      parentId = gptResponse[c].id
+      modifiedText = modifiedText.secondPart
+      modifiedText =  splitParagraph(modifiedText, wordCount)
+      c++;
+    } while(modifiedText.secondPart !== "")
+    const summaryText = modifiedText.firstPart + "\n" + `Question : \n ${data.question}`
+    gptResponse[c] = await chatGPTRequestWithParentId(summaryText, parentId);
+    return gptResponse[c].text
   } catch (error) {
     console.error("Error in getSummaryDoc: ", error.message)
     throw error

@@ -12,7 +12,7 @@ const api = new ChatGPTAPI({
 	},
 });
 
-async function chatGPTRequest(prompt) {
+export async function chatGPTRequest(prompt) {
   try {
     const res = await api.sendMessage(prompt)
     return res.text
@@ -22,4 +22,21 @@ async function chatGPTRequest(prompt) {
   }
 }
 
-export default chatGPTRequest;
+export async function chatGPTRequestWithParentId(prompt, parentId) {
+  try {
+    let res;
+    if(parentId) {
+      res = await api.sendMessage(prompt, {
+        parentMessageId: parentId
+      });
+    } else {
+      res = await api.sendMessage(prompt);
+    }
+    return res
+  } catch (error) {
+    console.error('ChatGPT API Request Error:', error.message);
+    throw error;
+  }
+}
+
+// export default {chatGPTRequest, chatGPTRequestWithParentId};
