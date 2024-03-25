@@ -35,9 +35,9 @@ const getUniqueGPTIndex = async (req, res) => {
   }
 };
 
-const getDistinctDoc = async (req, res) => {
+const getAlertNom = async (req, res) => {
   try {
-    const data = await GPT.getDistinctDoc();
+    const data = await GPT.getAlertNom();
     if (!data || data.length == 0) {
       res.status(400).send({
         error: "Data not found"
@@ -102,4 +102,4 @@ const getSummaryDoc = async (req, res) => {
   }
 };
 
-export { createQuestionsBatch, getUniqueGPTIndex, getSummaryInvite, getDistinctDoc, getSummaryDoc };
+export { createQuestionsBatch, getUniqueGPTIndex, getSummaryInvite, getAlertNom, getSummaryDoc };

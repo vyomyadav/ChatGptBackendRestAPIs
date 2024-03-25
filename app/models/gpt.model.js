@@ -1,7 +1,8 @@
 // GPT.model.js
 import sql from "./db.js";
 import {chatGPTRequest, chatGPTRequestWithParentId} from "../chatGptIntegration.js";
-import splitParagraph from "../utils/utils.js";
+import { splitParagraph, transformAlertFacettes, encodeAlertString } from "../utils/utils.js";
+import nodeFetch from "node-fetch";
 
 const GPT = () => { };
 
@@ -68,13 +69,13 @@ GPT.getUniqueGPTIndex = async () => {
   }
 }
 
-GPT.getDistinctDoc = async () => {
+GPT.getAlertNom = async () => {
   try {
-    const fetchQuery = `Select distinct typ_de_doc from gpt_index;`;
+    const fetchQuery = `Select id,nom from alertes`;
     const [answersData] = await sql.query(fetchQuery);
     return answersData;
   } catch (error) {
-    console.error("Error in getUniqueGPTIndex: ", error.message)
+    console.error("Error in getAlertNom: ", error.message)
     throw error
   }
 }
@@ -98,30 +99,48 @@ GPT.getSummaryInvite = async (data) => {
 
 GPT.getSummaryDoc = async (data) => {
   try {
-    const fetchQuery = `Select distinct id_text from gpt_index where typ_de_doc = "${data.key}";`
+    const fetchQuery = `Select facettes,mot_cle from alertes where id = "${data.key}";`
     const [answersData] = await sql.query(fetchQuery);
-    const idTextValues = answersData.map(item => item.id_text).join(',');
-    const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
-    const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
-    const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
-    const wordCount = process.env.DOC_WORD_COUNT;
-    let modifiedText = splitParagraph(invitesSummary, wordCount)
-    let parentId = null;
-    let gptResponse = [];
-    gptResponse[0] = await chatGPTRequestWithParentId(`Summarise the below conversation: \n ${modifiedText.firstPart}`, parentId);
-    parentId = gptResponse[0].id
-    modifiedText = splitParagraph(modifiedText.secondPart, wordCount)
-    let c = 1;
-    do {
-      gptResponse[c] = await chatGPTRequestWithParentId(`Summarise the below text and the previous summary: \n ${modifiedText.firstPart}`, parentId);
-      parentId = gptResponse[c].id
-      modifiedText = modifiedText.secondPart
-      modifiedText =  splitParagraph(modifiedText, wordCount)
-      c++;
-    } while(modifiedText.secondPart !== "")
-    const summaryText = modifiedText.firstPart + "\n" + `Question : \n ${data.question}`
-    gptResponse[c] = await chatGPTRequestWithParentId(summaryText, parentId);
-    return gptResponse[c].text
+    const transformedObject = transformAlertFacettes(answersData[0].facettes)
+    const encodedAlertString = encodeAlertString(transformedObject)
+    const solisUrl = `${process.env.SOLR__API_DOMAIN}/solr/dreamcore/select?qf=key_metadata^10&fq=${encodedAlertString}&q=(key_metadata:${answersData[0].mot_cle}%20OR%20text:${answersData[0].mot_cle})`
+    const solisResponse = await nodeFetch(solisUrl).then(response => {
+      // Check if response is successful
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      // Parse response JSON
+      return response.json();
+    })
+    .catch(error => {
+      console.error('There was a problem with the fetch operation:', error);
+    });
+    const ntext = solisResponse.response.docs[0].ntext;
+    const modifiedText = `${ntext} \n \n Question: \n ${data.question}  `;
+    const gptResponse = await chatGPTRequest(modifiedText);
+    return gptResponse;
+    // const idTextValues = answersData.map(item => item.id_text).join(',');
+    // const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
+    // const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
+    // const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
+    // const wordCount = process.env.DOC_WORD_COUNT;
+    // let modifiedText = splitParagraph(invitesSummary, wordCount)
+    // let parentId = null;
+    // let gptResponse = [];
+    // gptResponse[0] = await chatGPTRequestWithParentId(`Summarise the below conversation: \n ${modifiedText.firstPart}`, parentId);
+    // parentId = gptResponse[0].id
+    // modifiedText = splitParagraph(modifiedText.secondPart, wordCount)
+    // let c = 1;
+    // do {
+    //   gptResponse[c] = await chatGPTRequestWithParentId(`Summarise the below text and the previous summary: \n ${modifiedText.firstPart}`, parentId);
+    //   parentId = gptResponse[c].id
+    //   modifiedText = modifiedText.secondPart
+    //   modifiedText =  splitParagraph(modifiedText, wordCount)
+    //   c++;
+    // } while(modifiedText.secondPart !== "")
+    // const summaryText = modifiedText.firstPart + "\n" + `Question : \n ${data.question}`
+    // gptResponse[c] = await chatGPTRequestWithParentId(summaryText, parentId);
+    // return gptResponse[c].text
   } catch (error) {
     console.error("Error in getSummaryDoc: ", error.message)
     throw error
@@ -134,7 +153,6 @@ const callUpdateGptTables = () => {
     const storedProcedureQuery = "CALL gpt_update_tables()";
     sql.query(storedProcedureQuery)
       .then(result => {
-        // console.log("Stored procedure called successfully");
         resolve(result);
       })
       .catch(err => {
