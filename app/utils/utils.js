@@ -45,10 +45,11 @@ function transformAlertFacettes(originalArray) {
                         transformedObject.s.push(child.id);
                         break;
                     case 'T':
-                        transformedObject.th.push(child.id);
-                        break;
-                    case 'T':
-                        transformedObject.t.push(child.id);
+                        if (child.id.charAt(1).toLowerCase() === "h") {
+                            transformedObject.th.push(child.id);
+                        } else {
+                            transformedObject.t.push(child.id);
+                        }
                         break;
                     default:
                         break;
@@ -70,13 +71,11 @@ function transformAlertFacettes(originalArray) {
                 }
                 break;
             case 'T':
-                transformedObject.th.push(item.id);
-                if (item.children) {
-                    processChildren(item.children);
+                if (child.id.charAt(1).toLowerCase() === "h") {
+                    transformedObject.th.push(child.id);
+                } else {
+                    transformedObject.t.push(child.id);
                 }
-                break;
-            case 'T':
-                transformedObject.t.push(item.id);
                 if (item.children) {
                     processChildren(item.children);
                 }

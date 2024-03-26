@@ -116,31 +116,27 @@ GPT.getSummaryDoc = async (data) => {
       console.error('There was a problem with the fetch operation:', error);
     });
     const ntext = solisResponse.response.docs[0].ntext;
-    const modifiedText = `${ntext} \n \n Question: \n ${data.question}  `;
-    const gptResponse = await chatGPTRequest(modifiedText);
-    return gptResponse;
-    // const idTextValues = answersData.map(item => item.id_text).join(',');
-    // const fetchSecondQuery = `Select text from gpt_text where id IN (${idTextValues});`
-    // const [secondQueryAnswerData] = await sql.query(fetchSecondQuery);
-    // const invitesSummary = secondQueryAnswerData.map(item => item.text).join("\n");
-    // const wordCount = process.env.DOC_WORD_COUNT;
-    // let modifiedText = splitParagraph(invitesSummary, wordCount)
-    // let parentId = null;
-    // let gptResponse = [];
-    // gptResponse[0] = await chatGPTRequestWithParentId(`Summarise the below conversation: \n ${modifiedText.firstPart}`, parentId);
-    // parentId = gptResponse[0].id
-    // modifiedText = splitParagraph(modifiedText.secondPart, wordCount)
-    // let c = 1;
-    // do {
-    //   gptResponse[c] = await chatGPTRequestWithParentId(`Summarise the below text and the previous summary: \n ${modifiedText.firstPart}`, parentId);
-    //   parentId = gptResponse[c].id
-    //   modifiedText = modifiedText.secondPart
-    //   modifiedText =  splitParagraph(modifiedText, wordCount)
-    //   c++;
-    // } while(modifiedText.secondPart !== "")
-    // const summaryText = modifiedText.firstPart + "\n" + `Question : \n ${data.question}`
-    // gptResponse[c] = await chatGPTRequestWithParentId(summaryText, parentId);
-    // return gptResponse[c].text
+    const combinedNText = solisResponse.response.docs.map(obj => obj.ntext).join("\n");
+    const nTextSummary = `${combinedNText} \n \n Question: \n ${data.question}`;
+    const wordCount = process.env.DOC_WORD_COUNT;
+    let modifiedText = splitParagraph(nTextSummary, wordCount)
+    let parentId = null;
+    let gptResponse = [];
+    gptResponse[0] = await chatGPTRequestWithParentId(`Summarise the below text and the previous summary: \n ${modifiedText.firstPart}`, parentId);
+    console.log(gptResponse[0].text)
+    parentId = gptResponse[0].id
+    modifiedText = splitParagraph(modifiedText.secondPart, wordCount)
+    let c = 1;
+    do {
+      gptResponse[c] = await chatGPTRequestWithParentId(`Summarise the below text and the previous summary: \n ${modifiedText.firstPart}`, parentId);
+      parentId = gptResponse[c].id
+      modifiedText = modifiedText.secondPart
+      modifiedText =  splitParagraph(modifiedText, wordCount)
+      c++;
+    } while(modifiedText.secondPart !== "")
+    const summaryText = modifiedText.firstPart + "\n" + `Question : \n ${data.question}`
+    gptResponse[c] = await chatGPTRequestWithParentId(summaryText, parentId);
+    return gptResponse[c].text
   } catch (error) {
     console.error("Error in getSummaryDoc: ", error.message)
     throw error
