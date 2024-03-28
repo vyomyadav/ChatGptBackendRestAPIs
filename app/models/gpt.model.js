@@ -62,7 +62,7 @@ GPT.getUniqueGPTIndex = async () => {
   try {
     const fetchQuery = `SELECT id, key_metadata FROM gpt_index WHERE id IN (SELECT MIN(id) AS id FROM gpt_index GROUP BY key_metadata);`;
     const [answersData] = await sql.query(fetchQuery);
-    return answersData;
+    return answersData; 
   } catch (error) {
     console.error("Error in getUniqueGPTIndex: ", error.message)
     throw error
@@ -71,7 +71,7 @@ GPT.getUniqueGPTIndex = async () => {
 
 GPT.getAlertNom = async () => {
   try {
-    const fetchQuery = `Select id,nom from alertes`;
+    const fetchQuery = `Select id,nom from key_requests`;
     const [answersData] = await sql.query(fetchQuery);
     return answersData;
   } catch (error) {
@@ -99,7 +99,7 @@ GPT.getSummaryInvite = async (data) => {
 
 GPT.getSummaryDoc = async (data) => {
   try {
-    const fetchQuery = `Select facettes,mot_cle from alertes where id = "${data.key}";`
+    const fetchQuery = `Select facettes,mot_cle from key_requests where id = "${data.key}";`
     const [answersData] = await sql.query(fetchQuery);
     const transformedObject = transformAlertFacettes(answersData[0].facettes)
     const encodedAlertString = encodeAlertString(transformedObject)
